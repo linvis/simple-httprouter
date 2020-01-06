@@ -2,69 +2,44 @@
 // versino 2: parameter matching
 package router
 
-type Node struct {
-	Val      string
-	IsEnd    bool
-	Children []*Node
+import "net/http"
+
+import "fmt"
+
+//Router struct
+type Router struct {
+	urlTree *Node
 }
 
-func InitRouter() *Node {
-	return &Node{}
+type HandlerFunc func(w http.ResponseWriter, r *http.Request)
+
+//New new a httprouter
+func New() *Router {
+	router := &Router{}
+
+	router.urlTree = InitRouter()
+
+	return router
 }
 
-func (this *Node) FindNode(c rune) *Node {
-	var ans *Node = nil
+func (router *Router) Get(url string, handlers ...HandlerFunc) {
+	router.urlTree.AddURL(url, handlers)
+}
 
-	for _, next := range this.Children {
-		if string(c) == next.Val {
-			ans = next
-			break
+//ServeHTTP override ServeHTTP
+func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
+	fmt.Println("server url:", r.URL.Path)
+
+	node := router.urlTree.Search(r.URL.Path)
+	if node != nil {
+		for _, f := range node.handlers {
+			f(w, r)
 		}
 	}
-
-	return ans
 }
 
-func (this *Node) AddURL(url string) {
-	head := this
-
-	if len(url) <= 0 {
-		return
-	}
-
-	for _, c := range url {
-		next := head.FindNode(c)
-		if next == nil {
-			next = &Node{}
-			next.Val = string(c)
-			head.Children = append(head.Children, next)
-		}
-
-		head = next
-	}
-
-	head.IsEnd = true
-}
-
-func (this *Node) Search(url string) bool {
-	head := this
-
-	if len(url) <= 0 {
-		return false
-	}
-
-	for _, c := range url {
-		next := head.FindNode(c)
-		if next == nil {
-			return false
-		}
-
-		head = next
-	}
-
-	if head.IsEnd == true {
-		return true
-	} else {
-		return false
-	}
+//Run run httprouter
+func (router *Router) Run(path string) {
+	http.ListenAndServe(path, router)
 }
