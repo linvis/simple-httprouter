@@ -330,38 +330,3 @@ func BenchmarkMem(b *testing.B) {
 		routerHandler = loadRouter(githubAPI)
 	})
 }
-
-// func benchRequest(b *testing.B, router http.Handler, r *http.Request) {
-// 	w := new(mockResponseWriter)
-// 	u := r.URL
-// 	rq := u.RawQuery
-// 	r.RequestURI = u.RequestURI()
-
-// 	b.ReportAllocs()
-// 	b.ResetTimer()
-
-// 	for i := 0; i < b.N; i++ {
-// 		u.RawQuery = rq
-// 		router.ServeHTTP(w, r)
-// 	}
-// }
-
-// func benchRoutes(b *testing.B, router http.Handler, routes []route) {
-// 	w := new(mockResponseWriter)
-// 	r, _ := http.NewRequest("GET", "/", nil)
-// 	u := r.URL
-// 	rq := u.RawQuery
-
-// 	b.ReportAllocs()
-// 	b.ResetTimer()
-
-// 	for i := 0; i < b.N; i++ {
-// 		for _, route := range routes {
-// 			r.Method = route.method
-// 			r.RequestURI = route.path
-// 			u.Path = route.path
-// 			u.RawQuery = rq
-// 			router.ServeHTTP(w, r)
-// 		}
-// 	}
-// }

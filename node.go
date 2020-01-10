@@ -7,7 +7,7 @@ type Node struct {
 	Children []*Node
 }
 
-func InitRouter() *Node {
+func InitNode() *Node {
 	return &Node{}
 }
 
