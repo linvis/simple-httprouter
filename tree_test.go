@@ -3,7 +3,7 @@ package router
 import "testing"
 
 func TestRouter(t *testing.T) {
-	root := InitRouter()
+	root := InitNode()
 
 	str1 := "/user/info"
 	root.AddURL(str1, nil)

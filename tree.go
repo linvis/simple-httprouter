@@ -1,5 +1,7 @@
 package router
 
+import "strings"
+
 type Node struct {
 	Val      string
 	IsEnd    bool
@@ -11,11 +13,16 @@ func InitNode() *Node {
 	return &Node{}
 }
 
-func (this *Node) FindNode(c rune) *Node {
+//FindDelimiter split by delimiter
+func FindDelimiter(s string) []string {
+	return strings.Split(s, "/")
+}
+
+func (this *Node) FindNode(path string) *Node {
 	var ans *Node = nil
 
 	for _, next := range this.Children {
-		if string(c) == next.Val {
+		if path == next.Val {
 			ans = next
 			break
 		}
@@ -31,11 +38,13 @@ func (this *Node) AddURL(url string, handlers []HandlerFunc) {
 		return
 	}
 
-	for _, c := range url {
-		next := head.FindNode(c)
+	pathes := FindDelimiter(url)
+
+	for _, path := range pathes {
+		next := head.FindNode(path)
 		if next == nil {
 			next = &Node{}
-			next.Val = string(c)
+			next.Val = path
 			head.Children = append(head.Children, next)
 		}
 
@@ -53,8 +62,10 @@ func (this *Node) Search(url string) *Node {
 		return nil
 	}
 
-	for _, c := range url {
-		next := head.FindNode(c)
+	pathes := FindDelimiter(url)
+
+	for _, path := range pathes {
+		next := head.FindNode(path)
 		if next == nil {
 			return nil
 		}
