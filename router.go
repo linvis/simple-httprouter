@@ -4,8 +4,6 @@ package router
 
 import "net/http"
 
-import "fmt"
-
 //Router struct
 type Router struct {
 	urlPool map[string]*Node
@@ -68,7 +66,7 @@ func (router *Router) DELETE(url string, handlers ...HandlerFunc) {
 
 //ServeHTTP override ServeHTTP
 func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("server method,  url:", r.Method, r.URL.Path)
+	// fmt.Println("server method,  url:", r.Method, r.URL.Path)
 
 	root, ok := router.urlPool[r.Method]
 	if !ok {

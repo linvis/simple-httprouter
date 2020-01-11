@@ -21,4 +21,11 @@ func TestRouter(t *testing.T) {
 	if root.Search(str3) != nil {
 		t.Error("router not matching")
 	}
+
+	str4 := "/user/:name"
+	str5 := "/user/hello"
+	root.AddURL(str4, nil)
+	if root.Search(str5) == nil {
+		t.Error("router not matching")
+	}
 }

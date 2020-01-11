@@ -278,6 +278,37 @@ var githubAPI = []route{
 	{"DELETE", "/user/keys/:id"},
 }
 
+type mockResponseWriter struct{}
+
+func (m *mockResponseWriter) Header() (h http.Header) {
+	return http.Header{}
+}
+
+func (m *mockResponseWriter) Write(p []byte) (n int, err error) {
+	return len(p), nil
+}
+
+func (m *mockResponseWriter) WriteString(s string) (n int, err error) {
+	return len(s), nil
+}
+
+func (m *mockResponseWriter) WriteHeader(int) {}
+
+func benchRequest(b *testing.B, router http.Handler, r *http.Request) {
+	w := new(mockResponseWriter)
+	u := r.URL
+	rq := u.RawQuery
+	r.RequestURI = u.RequestURI()
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		u.RawQuery = rq
+		router.ServeHTTP(w, r)
+	}
+}
+
 func calcMem(name string, load func()) {
 	m := new(runtime.MemStats)
 
@@ -325,8 +356,43 @@ func loadRouter([]route) http.Handler {
 	return r
 }
 
+func loadRouterSingle(method string, url string) http.Handler {
+	r := router.New()
+
+	switch method {
+	case "GET":
+		r.GET(url, routerFunc)
+	case "POST":
+		r.POST(url, routerFunc)
+	case "PUT":
+		r.PUT(url, routerFunc)
+	case "DELETE":
+		r.DELETE(url, routerFunc)
+	}
+
+	return r
+}
+
+func init() {
+	calcMem("Router", func() {
+		routerHandler = loadRouter(githubAPI)
+	})
+}
+
 func BenchmarkMem(b *testing.B) {
 	calcMem("Router", func() {
 		routerHandler = loadRouter(githubAPI)
 	})
+}
+
+func BenchmarkRouter_Param(b *testing.B) {
+	router := loadRouterSingle("GET", "/user/:name")
+
+	r, _ := http.NewRequest("GET", "/user/gordon", nil)
+	benchRequest(b, router, r)
+}
+
+func BenchmarkRouter_GithubStatic(b *testing.B) {
+	req, _ := http.NewRequest("GET", "/user/repos", nil)
+	benchRequest(b, routerHandler, req)
 }

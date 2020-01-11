@@ -24,11 +24,28 @@ func (this *Node) FindNode(path string) *Node {
 	for _, next := range this.Children {
 		if path == next.Val {
 			ans = next
-			break
+			return ans
+		}
+	}
+
+	for _, next := range this.Children {
+		if next.Val == "*" {
+			ans = next
+			return ans
 		}
 	}
 
 	return ans
+}
+
+func checkParam(path string) bool {
+	for _, c := range path {
+		if c == ':' {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (this *Node) AddURL(url string, handlers []HandlerFunc) {
@@ -41,10 +58,15 @@ func (this *Node) AddURL(url string, handlers []HandlerFunc) {
 	pathes := FindDelimiter(url)
 
 	for _, path := range pathes {
+		val := path
+		if checkParam(path) == true {
+			val = "*"
+		}
+
 		next := head.FindNode(path)
 		if next == nil {
 			next = &Node{}
-			next.Val = path
+			next.Val = val
 			head.Children = append(head.Children, next)
 		}
 
