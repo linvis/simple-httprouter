@@ -57,6 +57,12 @@ func (root *Node) findNode(path string) *Prefix {
 	}
 
 	for i, next := range root.Children {
+		if next.Val == "*" {
+			prefix.Pos = i
+			prefix.ExistState = PrefixMatchParam
+			return prefix
+		}
+
 		prefixLen := findLongestPrefix(path, next.Val)
 
 		// no common
@@ -74,14 +80,6 @@ func (root *Node) findNode(path string) *Prefix {
 			} else {
 				prefix.ExistState = PrefixMatchSub
 			}
-			return prefix
-		}
-	}
-
-	for i, next := range root.Children {
-		if next.Val == "*" {
-			prefix.Pos = i
-			prefix.ExistState = PrefixMatchParam
 			return prefix
 		}
 	}
