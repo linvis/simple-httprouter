@@ -9,33 +9,84 @@ type Node struct {
 	Children []*Node
 }
 
+const (
+	PrefixNotExist = iota
+	PrefixMatchBoth
+	PrefixMatchLeft
+	PrefixMatchRight
+	PrefixMatchSub
+	PrefixMatchParam
+)
+
+type Prefix struct {
+	ExistState int
+	Pos        int
+	Len        int
+}
+
 func InitNode() *Node {
 	return &Node{}
 }
 
 //FindDelimiter split by delimiter
 func FindDelimiter(s string) []string {
-	return strings.Split(s, "/")
+	return strings.Split(s, "/")[1:]
 }
 
-func (this *Node) FindNode(path string) *Node {
-	var ans *Node = nil
+func findLongestPrefix(a string, b string) int {
+	var i int = 0
+	for ; i < len(a) && i < len(b); i++ {
+		if a[i] != b[i] {
+			break
+		}
+	}
+	if i == 0 {
+		//no common
+		return -1
+	} else {
+		return i
+	}
+}
 
-	for _, next := range this.Children {
-		if path == next.Val {
-			ans = next
-			return ans
+//findNode return node exist, prefix length
+func (root *Node) findNode(path string) *Prefix {
+	prefix := &Prefix{
+		ExistState: PrefixNotExist,
+		Pos:        -1,
+		Len:        0,
+	}
+
+	for i, next := range root.Children {
+		prefixLen := findLongestPrefix(path, next.Val)
+
+		// no common
+		if prefixLen < 0 {
+			continue
+		} else {
+			prefix.Pos = i
+			prefix.Len = prefixLen
+			if prefixLen == len(path) && prefixLen == len(next.Val) {
+				prefix.ExistState = PrefixMatchBoth
+			} else if prefixLen == len(path) {
+				prefix.ExistState = PrefixMatchLeft
+			} else if prefixLen == len(next.Val) {
+				prefix.ExistState = PrefixMatchRight
+			} else {
+				prefix.ExistState = PrefixMatchSub
+			}
+			return prefix
 		}
 	}
 
-	for _, next := range this.Children {
+	for i, next := range root.Children {
 		if next.Val == "*" {
-			ans = next
-			return ans
+			prefix.Pos = i
+			prefix.ExistState = PrefixMatchParam
+			return prefix
 		}
 	}
 
-	return ans
+	return prefix
 }
 
 func checkParam(path string) bool {
@@ -50,6 +101,7 @@ func checkParam(path string) bool {
 
 func (this *Node) AddURL(url string, handlers []HandlerFunc) {
 	head := this
+	var next *Node = nil
 
 	if len(url) <= 0 {
 		return
@@ -63,13 +115,37 @@ func (this *Node) AddURL(url string, handlers []HandlerFunc) {
 			val = "*"
 		}
 
-		next := head.FindNode(path)
-		if next == nil {
+		prefix := head.findNode(path)
+
+		if prefix.ExistState == PrefixNotExist || prefix.ExistState == PrefixMatchParam {
 			next = &Node{}
 			next.Val = val
 			head.Children = append(head.Children, next)
-		}
+		} else if prefix.ExistState == PrefixMatchBoth {
+			next = head.Children[prefix.Pos]
+		} else {
+			if prefix.ExistState == PrefixMatchRight {
+				next = head.Children[prefix.Pos]
+			} else {
+				next = &Node{}
+				next.Val = path[:prefix.Len]
+			}
 
+			if prefix.ExistState != PrefixMatchRight {
+				head.Children[prefix.Pos].Val = head.Children[prefix.Pos].Val[prefix.Len:]
+				next.Children = append(next.Children, head.Children[prefix.Pos])
+			}
+
+			head.Children = append(head.Children[:prefix.Pos], head.Children[prefix.Pos+1:]...)
+			head.Children = append(head.Children, next)
+
+			if prefix.ExistState != PrefixMatchLeft {
+				next.Children = append(next.Children, &Node{
+					Val: path[prefix.Len:],
+				})
+				next = next.Children[len(next.Children)-1]
+			}
+		}
 		head = next
 	}
 
@@ -86,13 +162,27 @@ func (this *Node) Search(url string) *Node {
 
 	pathes := FindDelimiter(url)
 
-	for _, path := range pathes {
-		next := head.FindNode(path)
-		if next == nil {
-			return nil
-		}
+	for i := 0; i < len(pathes); {
+		path := pathes[i]
 
-		head = next
+	LOOP:
+		// idx, prefix := head.findNode(path)
+		prefix := head.findNode(path)
+		if prefix.ExistState == PrefixNotExist {
+			return nil
+		} else if prefix.ExistState == PrefixMatchLeft {
+			return nil
+		} else if prefix.ExistState == PrefixMatchRight {
+			path = path[prefix.Len:]
+			head = head.Children[prefix.Pos]
+			goto LOOP
+		} else if prefix.ExistState == PrefixMatchBoth || prefix.ExistState == PrefixMatchParam {
+			head = head.Children[prefix.Pos]
+			i++
+		} else {
+			path = path[prefix.Len:]
+			goto LOOP
+		}
 	}
 
 	if head.IsEnd == true {

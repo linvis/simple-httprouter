@@ -278,6 +278,12 @@ var githubAPI = []route{
 	{"DELETE", "/user/keys/:id"},
 }
 
+const fiveColon = "/:a/:b/:c/:d/:e"
+const fiveRoute = "/test/test/test/test/test"
+
+const twentyColon = "/:a/:b/:c/:d/:e/:f/:g/:h/:i/:j/:k/:l/:m/:n/:o/:p/:q/:r/:s/:t"
+const twentyRoute = "/a/b/c/d/e/f/g/h/i/j/k/l/m/n/o/p/q/r/s/t"
+
 type mockResponseWriter struct{}
 
 func (m *mockResponseWriter) Header() (h http.Header) {
@@ -389,6 +395,20 @@ func BenchmarkRouter_Param(b *testing.B) {
 	router := loadRouterSingle("GET", "/user/:name")
 
 	r, _ := http.NewRequest("GET", "/user/gordon", nil)
+	benchRequest(b, router, r)
+}
+
+func BenchmarkRouter_Param5(b *testing.B) {
+	router := loadRouterSingle("GET", fiveColon)
+
+	r, _ := http.NewRequest("GET", fiveRoute, nil)
+	benchRequest(b, router, r)
+}
+
+func BenchmarkRouter_Param20(b *testing.B) {
+	router := loadRouterSingle("GET", twentyColon)
+
+	r, _ := http.NewRequest("GET", twentyRoute, nil)
 	benchRequest(b, router, r)
 }
 
